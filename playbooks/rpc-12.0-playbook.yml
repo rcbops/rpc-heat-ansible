@@ -27,6 +27,7 @@
       with_items:
         - colordiff
         - fping
+        - moreutils
 
     - name: Add Nodes Hosts File Entries (Long)
       lineinfile: dest=/etc/hosts line='{{ hostvars[item].ansible_eth2.ipv4.address }} {{ heat_stack_prefix|string }}-{{ item }}' insertafter=EOF state=present
@@ -579,8 +580,11 @@
     - maas
     - tempest
   tasks:
+    - name: debug local facts
+      setup:
+        filter: ansible_local
     - name:
-      shell: ./scripts/deploy.sh >> /opt/cloud-training/deploy.sh.log 2>> /opt/cloud-training/deploy.sh.err chdir=/opt/rpc-openstack/
+      shell: ./scripts/deploy.sh 2>> /opt/cloud-training/deploy.sh.err |ts >> /opt/cloud-training/deploy.sh.log chdir=/opt/rpc-openstack/
       register: deploy_result
       until: deploy_result.rc == 0
       retries: "{{ deploy_retries }}"
@@ -593,6 +597,8 @@
         DEPLOY_SWIFT: "{{ ansible_local.deploy_environment.option.deploy_swift }}"
         ANSIBLE_FORCE_COLOR: "false"
         FORKS: "10"
+        ANSIBLE_GIT_REPO: "{{ ansible_local.ansible_git.facts.git_repo }}"
+        ANSIBLE_GIT_RELEASE: "{{ ansible_local.ansible_git.facts.git_branch }}"
 
 - name: Configure External Network - Play 1 of 2
   hosts: infra[0]

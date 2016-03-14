@@ -7,10 +7,22 @@ parameters:
     type: string
     label: Ansible Tags
     default: 'prepare'
+  ansible_repo:
+    type: string
+    label: git repo to clone for ansible
+    default: 'https://github.com/ansible/ansible'
+  ansible_version:
+    type: string
+    label: git tag/branch/sha to install ansible form
+    default: 'v1.9.4-1'
   rpc_release:
     type: string
     label: RPC Release
     default: 'r11.1.4'
+  rpc_heat_ansible_playbook:
+    type: string
+    label: RPC Heat Ansible Playbook
+    default: ''
   rpc_heat_ansible_release:
     type: string
     label: RPC Heat Ansible Release
@@ -363,14 +375,19 @@ resources:
                     fi
                   }
                   function install_ansible {
-                    if [[ "$RPC_SERIES" == "10.1" ]]; then
-                      ANSIBLE_VERSION="1.6.10"
-                    elif [[ "$RPC_SERIES" == "11.0" || "$RPC_SERIES" == "11.1"  ]]; then
-                      ANSIBLE_VERSION="1.9.3"
-                    else
-                      ANSIBLE_VERSION="1.9.4"
-                    fi
-                    /usr/local/bin/pip install ansible==$ANSIBLE_VERSION || exit_failure "PIP Install Ansible Failure"
+                    git clone --recursive "%ansible_repo%" /opt/ansible
+                    pushd /opt/ansible
+                      git checkout "%ansible_version%"
+                      git submodule init
+                      git submodule update
+                      pip install . || exit_failure "PIP Install Ansible Failure"
+                    popd
+                    mkdir -p /etc/ansible/facts.d
+                    cat > /etc/ansible/facts.d/ansible_git.fact <<EOF
+                  [facts]
+                  git_repo=%ansible_repo%
+                  git_branch=%ansible_version%
+                  EOF
                   }
                   get_rpc_series %rpc_release%
                   /usr/bin/pip install --upgrade pip || exit_failure "PIP Upgrade PIP Failure"
@@ -386,7 +403,13 @@ resources:
                   if [[ "%rpc_heat_ansible_repo%" != "https://github.com/cloud-training/rpc-heat-ansible.git" ]]; then
                     git remote add upstream https://github.com/cloud-training/rpc-heat-ansible.git
                   fi
-                  ansible-playbook rpc-$RPC_SERIES-playbook.yml -v --tags %ansible_tags% || exit_failure "Ansible Playbook Run Failure"
+                  if [ -z "%rpc_heat_ansible_playbook%" ]
+                  then
+                    playbook="rpc-$RPC_SERIES-playbook.yml"
+                  else
+                    playbook="%rpc_heat_ansible_playbook%"
+                  fi
+                  ansible-playbook $playbook -v --tags %ansible_tags% || exit_failure "Ansible Playbook Run Failure"
                   exit_success
                 params:
                   "%swift_signal_notify%": { get_attr: [ swift_signal_handle_infra1, curl_cli ] }
@@ -394,6 +417,9 @@ resources:
                   "%rpc_heat_ansible_release%": { get_param: "rpc_heat_ansible_release" }
                   "%rpc_heat_ansible_repo%": { get_param: "rpc_heat_ansible_repo" }
                   "%rpc_release%": { get_param: "rpc_release" }
+                  "%rpc_heat_ansible_playbook%": { get_param: "rpc_heat_ansible_playbook" }
+                  "%ansible_repo%": { get_param: "ansible_repo" }
+                  "%ansible_version%": { get_param: "ansible_version" }
         runcmd:
           - tmux new-session -s rpc-heat-ansible -d
           - tmux rename-window runcmd-bash
