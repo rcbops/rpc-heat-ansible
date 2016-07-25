@@ -420,13 +420,13 @@
       when: ansible_local.pw_token_gen is not defined
       with_items:
         - user_secrets.yml
-        - user_extras_secrets.yml
+        - user_rpco_secrets.yml
 
     - name: Run Password Token Generation Script Done Fact
       ini_file: dest=/etc/ansible/facts.d/pw_token_gen.fact section=state option=done value=true
 
     - name: Update RPC User Variables File
-      lineinfile: dest=/etc/openstack_deploy/user_extras_variables.yml regexp='{{ item.regexp }}' line='{{ item.line }}' state=present
+      lineinfile: dest=/etc/openstack_deploy/user_rpco_variables_defaults.yml regexp='{{ item.regexp }}' line='{{ item.line }}' state=present
       with_items:
         - { regexp: '^neutron_dnsmasq_dns_servers:', line: 'neutron_dnsmasq_dns_servers: 8.8.8.8,8.8.4.4'}
         - { regexp: '^neutron_network_device_mtu:', line: 'neutron_network_device_mtu: 1400'}
@@ -493,7 +493,7 @@
         - { regexp: '^nova_libvirtd_auth_tcp:', line: 'nova_libvirtd_auth_tcp: none' }
 
     - name: Configure Ceph Settings
-      lineinfile: dest=/etc/openstack_deploy/user_extras_variables.yml regexp='{{ item.regexp }}' line='{{ item.line }}' state=present
+      lineinfile: dest=/etc/openstack_deploy/user_rpco_variables_defaults.yml regexp='{{ item.regexp }}' line='{{ item.line }}' state=present
       with_items:
         - { regexp: '^monitor_interface:', line: 'monitor_interface: eth1' }
         - { regexp: '^public_network:', line: 'public_network: 172.29.236.0/22' }
@@ -510,7 +510,7 @@
     - maas
   tasks:
     - name: Update RPC User Variables File
-      lineinfile: dest=/etc/openstack_deploy/user_extras_variables.yml regexp='{{ item.regexp }}' line='{{ item.line }}' state=present
+      lineinfile: dest=/etc/openstack_deploy/user_rpco_variables_defaults.yml regexp='{{ item.regexp }}' line='{{ item.line }}' state=present
       with_items:
         - { regexp: '^rackspace_cloud_auth_url:', line: 'rackspace_cloud_auth_url: {{ rackspace_cloud_auth_url }}' }
         - { regexp: '^rackspace_cloud_tenant_id:', line: 'rackspace_cloud_tenant_id: {{ rackspace_cloud_tenant_id }}' }
@@ -534,7 +534,7 @@
       register: infra1_maas_target_alias
 
     - name: Set MaaS Target Alias
-      lineinfile: "dest=/etc/openstack_deploy/user_extras_variables.yml regexp='maas_target_alias:' line='maas_target_alias: {{ infra1_maas_target_alias.stdout }}' state=present"
+      lineinfile: "dest=/etc/openstack_deploy/user_rpco_variables_defaults.yml regexp='maas_target_alias:' line='maas_target_alias: {{ infra1_maas_target_alias.stdout }}' state=present"
 
     - name: Set Deploy Environment MaaS Fact
       ini_file: dest=/etc/ansible/facts.d/deploy_environment.fact section=option option=deploy_maas value=yes
