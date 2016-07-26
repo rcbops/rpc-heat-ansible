@@ -106,13 +106,14 @@ if [[ $DELETE_STACK == yes ]]; then
   echo "===================================================="
   heat stack-delete $STACK_NAME 2>/dev/null
 
-  until [[ $BUILD_DELETED -eq 0 ]]; do
+  for i in {1..30}; do
     sleep 30
     STACK_STATUS=`heat stack-list 2>/dev/null| awk '/ '$STACK_NAME' / { print $6 }'`
     BUILD_DELETED=`heat stack-list 2>/dev/null| awk '/ '$STACK_NAME' / { print $6 }' | wc -l`
     echo "===================================================="
     echo "Stack Status:        $STACK_STATUS"
     echo "Build Deleted:       $BUILD_DELETED"
+    [[ $BUILD_DELETED -eq 0 ]] && break
     if [[ "$STACK_STATUS" != 'DELETE_IN_PROGRESS' ]]; then
       if [[ "$STACK_STATUS" == 'DELETE_FAILED' ]]; then
         NETWORK_ID=`heat resource-list $STACK_NAME 2>/dev/null| awk '/ OS::Neutron::Net / { print $4 }'`
