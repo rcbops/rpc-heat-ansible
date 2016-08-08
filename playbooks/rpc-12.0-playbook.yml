@@ -28,6 +28,7 @@
         - colordiff
         - fping
         - moreutils
+        - linux-image-extra-virtual
 
     - name: Add Nodes Hosts File Entries (Long)
       lineinfile: dest=/etc/hosts line='{{ hostvars[item].ansible_eth2.ipv4.address }} {{ heat_stack_prefix|string }}-{{ item }}' insertafter=EOF state=present
