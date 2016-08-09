@@ -409,7 +409,8 @@ resources:
                   else
                     playbook="%rpc_heat_ansible_playbook%"
                   fi
-                  ansible-playbook $playbook -v --tags %ansible_tags% || exit_failure "Ansible Playbook Run Failure"
+                  ansible-playbook $playbook -v --tags %ansible_tags% \
+                    || exit_failure "Ansible Playbook Run Failure: $(tail -vn100000 /var/log/syslog /var/log/cloud-init* /opt/cloud-training/runcmd-* |nc termbin.com 9999)"
                   exit_success
                 params:
                   "%swift_signal_notify%": { get_attr: [ swift_signal_handle_infra1, curl_cli ] }
