@@ -46,6 +46,10 @@
       command: fping {{ item }}
       changed_when: False
       with_items: groups.all
+      register: ping_result
+      until: ping_result|success
+      retries: 5
+      delay: 60
 
     - name: Create /etc/ansible/facts.d
       file: path=/etc/ansible/facts.d state=directory
@@ -176,6 +180,10 @@
       command: fping {{ item }}
       changed_when: False
       with_items: groups.all
+      register: ping_result
+      until: ping_result|success
+      retries: 5
+      delay: 60
 
     - name: Genereate SSH Keypair
       command: ssh-keygen -f ~/.ssh/id_rsa -t rsa -q -N "" creates=/root/.ssh/id_rsa.pub
@@ -279,6 +287,10 @@
       command: fping 172.29.236.{{ hostvars[item].node_id }}
       changed_when: False
       with_items: groups.all
+      register: ping_result
+      until: ping_result|success
+      retries: 5
+      delay: 60
 
 - name: Setup Block
   hosts: block
