@@ -11,6 +11,7 @@ PATH=$PATH:/opt/jenkins/bin
 # activate venv with heatclient
 . /opt/jenkins/venvs/rpcheatansible/bin/activate
 
+# This is also set in cleanup.sh and must be changed there if changed here.
 STACK_NAME=rpc-jenkins-$BUILD_NUMBER
 
 # Blocking stack create
@@ -101,30 +102,7 @@ if [[ $BUILD_FAILED -eq 1 && $SWIFT_SIGNAL_FAILED -gt 0 || ( $BUILD_FAILED -eq 0
   grep -e "fatal: \[" -e "failed: \[" -e "msg: " -e "\.\.\.ignoring" -e "stderr: " -e "stdout: " -e "OSError: " -e "UndefinedError: " -e ", W:" -e ", E:" -e "PLAY" -e " Entity:" -e " Check:" -e " Alarm:" runcmd-bash.log deploy.sh.log
 fi
 
-BUILD_DELETED=1
-if [[ $DELETE_STACK == yes ]]; then
-  echo "===================================================="
-  heat stack-delete $STACK_NAME 2>/dev/null
-
-  for i in {1..30}; do
-    sleep 30
-    STACK_STATUS=`heat stack-list 2>/dev/null| awk '/ '$STACK_NAME' / { print $6 }'`
-    BUILD_DELETED=`heat stack-list 2>/dev/null| awk '/ '$STACK_NAME' / { print $6 }' | wc -l`
-    echo "===================================================="
-    echo "Stack Status:        $STACK_STATUS"
-    echo "Build Deleted:       $BUILD_DELETED"
-    [[ $BUILD_DELETED -eq 0 ]] && break
-    if [[ "$STACK_STATUS" != 'DELETE_IN_PROGRESS' ]]; then
-      if [[ "$STACK_STATUS" == 'DELETE_FAILED' ]]; then
-        NETWORK_ID=`heat resource-list $STACK_NAME 2>/dev/null| awk '/ OS::Neutron::Net / { print $4 }'`
-        for PORT_ID in `rack networks port list --network-id $NETWORK_ID --fields id --no-header`; do
-          rack networks port delete --id $PORT_ID
-          sleep 20
-        done
-      fi
-      heat stack-delete $STACK_NAME 2>/dev/null
-    fi
-  done
-fi
+# Stack deletion has been moved to cleanup.sh so it can be run as a post build action.
+[[ ${RUN_CLEANUP_FROM_BUILD:-no} == yes ]] && $(dirname $0)/cleanup.sh
 
 exit $BUILD_FAILED
